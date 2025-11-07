@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
  * Cliente base sem autenticação
  */
 export const actionClient = createSafeActionClient({
-  handleReturnedServerError(e) {
+  handleServerError(e: Error) {
     return {
       serverError: e.message,
     }
@@ -17,7 +17,7 @@ export const actionClient = createSafeActionClient({
  * Use este para todas as actions que precisam de usuário logado
  */
 export const authActionClient = actionClient.use(async ({ next }) => {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   // Verificar autenticação
   const {

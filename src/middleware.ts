@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import type { Database } from "@/lib/supabase/types"
+
+type UserProfile = {
+  id: string
+  role: "cliente" | "atendente" | "super_admin"
+  is_active: boolean
+}
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.pathname
@@ -11,7 +18,7 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -86,7 +93,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/cliente", request.url))
     }
 
-    if (url.startsWith("/cliente") && userProfile.role !== "usuario_cliente") {
+    // Clientes e atendentes vão para /cliente
+    if (url.startsWith("/cliente") && userProfile.role === "super_admin") {
       return NextResponse.redirect(new URL("/super-admin", request.url))
     }
 
@@ -98,23 +106,12 @@ export async function middleware(request: NextRequest) {
 
 async function fetchUserProfile(
   userId: string,
-  supabase: {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (
-          column: string,
-          value: string
-        ) => {
-          single: () => Promise<{ data: unknown; error: unknown }>
-        }
-      }
-    }
-  }
-) {
+  supabase: ReturnType<typeof createServerClient<Database>>
+): Promise<UserProfile | null> {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("id, role, is_active, tenant_id")
+      .select("id, role, is_active")
       .eq("id", userId)
       .single()
 
@@ -123,7 +120,7 @@ async function fetchUserProfile(
       return null
     }
 
-    return data
+    return data as UserProfile
   } catch (error) {
     console.error("Middleware - Exceção ao buscar perfil:", error)
     return null
