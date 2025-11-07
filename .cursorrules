@@ -1,0 +1,550 @@
+# Regras do Cursor para Lívia v2
+
+## Contexto do Projeto
+
+Projeto full-stack usando Next.js 16 (App Router), TypeScript, Tailwind CSS, Shadcn/ui no frontend e Supabase (PostgreSQL + Auth + Realtime) no backend.
+
+## Princípios Principais
+
+### Clean Code & SOLID
+
+- Escreva um código limpo, conciso e fácil de manter, seguindo princípios do SOLID e Clean Code.
+- Use nomes de variáveis descritivos (exemplos: `isLoading`, `hasError`, `userData`).
+- Use kebab-case para nomes de pastas e arquivos (ex: `user-profile.tsx`, `auth-service.ts`).
+- Sempre use TypeScript para escrever código.
+- DRY (Don't Repeat Yourself). Evite duplicidade de código. Quando necessário, crie funções/componentes reutilizáveis.
+
+### Nomenclatura e Organização
+
+- **Componentes React**: PascalCase (ex: `UserProfile`, `ButtonPrimary`)
+- **Funções/variáveis**: camelCase (ex: `getUserData`, `isAuthenticated`)
+- **Arquivos/pastas**: kebab-case (ex: `user-profile.tsx`, `auth-helpers.ts`)
+- **Constantes**: UPPER_SNAKE_CASE (ex: `API_BASE_URL`, `MAX_RETRY_ATTEMPTS`)
+- **Tipos/Interfaces**: PascalCase (ex: `User`, `MessageProps`)
+
+## Stack e Bibliotecas
+
+### Frontend
+
+- **Framework**: Next.js 16 (App Router)
+- **Linguagem**: TypeScript (strict mode)
+- **Estilização**: Tailwind CSS (sempre usar para estilos)
+- **Componentes UI**: Shadcn/ui (use ao máximo os componentes disponíveis)
+- **Formulários**: React Hook Form + Zod para validação
+- **Server Actions**: next-safe-action (use sempre para Server Actions)
+- **Formatação de datas**: dayjs
+- **State Management**: React Query (server state) + Context API (apenas auth/theme)
+- **Realtime**: Supabase Realtime
+
+### Backend
+
+- **Database & Auth**: Supabase (PostgreSQL + Auth)
+- **Realtime**: Supabase Realtime (websockets)
+- **Automação**: N8N
+- **Deploy**: Vercel (frontend)
+
+## Estrutura de Pastas
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Rotas de autenticação
+│   ├── (dashboard)/       # Rotas protegidas
+│   │   ├── cliente/       # Plataforma cliente
+│   │   └── super-admin/   # Plataforma super admin
+│   └── api/               # API Routes
+├── features/              # Features compartilhadas entre páginas
+│   ├── auth/              # Autenticação
+│   ├── messages/          # Mensagens (com realtime)
+│   ├── conversations/     # Conversas (com realtime)
+│   └── contacts/          # Contatos
+├── components/
+│   ├── ui/                # Componentes Shadcn/ui
+│   └── shared/            # Componentes reutilizáveis
+├── lib/                   # Utilitários e configurações
+│   ├── supabase/          # Supabase clients
+│   ├── react-query/       # React Query setup
+│   ├── validations/       # Zod schemas
+│   ├── actions/           # Server Actions
+│   └── utils/             # Utilities
+├── hooks/                 # Custom React hooks globais
+├── types/                 # TypeScript types e interfaces
+├── contexts/              # React Contexts (apenas UI state)
+└── middleware.ts          # Next.js middleware
+```
+
+## Regras Específicas
+
+### React/Next.js
+
+- **Sempre use Tailwind CSS** para estilização. Evite CSS modules ou styled-components.
+- **Use componentes Shadcn/ui** o máximo possível ao criar/modificar componentes.
+- **Validação de formulários**: sempre use Zod.
+- **Criação de formulários**: sempre use React Hook Form com o componente `form.tsx`.
+- **Componentes específicos de página**: crie na pasta `_features/` dentro da pasta da respectiva página quando tiverem lógica. Use `_components/` para componentes "burros".
+- **Server Actions**:
+  - Sempre use a biblioteca "next-safe-action"
+  - Armazene em `src/lib/actions` com estrutura `src/lib/actions/nome-da-action/schema.ts` e `index.ts`
+  - Use `authActionClient` para actions que precisam de autenticação
+  - Use `superAdminActionClient` para actions exclusivas de super admin
+- **Interação com banco de dados**: 
+  - Client-side: use `createBrowserClient()` de `@/lib/supabase/client`
+  - Server-side: use `createServerSupabaseClient()` de `@/lib/supabase/server`
+- **Manipulação de datas**: use a biblioteca "dayjs"
+- **Layout de páginas**: use componentes de layout consistentes
+- **State Management**:
+  - React Query para server state (dados do banco)
+  - Context API apenas para auth e theme
+  - NUNCA misturar server state com Context
+- **Realtime**:
+  - Sempre limpar subscriptions no cleanup do useEffect
+  - Usar React Query para atualizar cache ao receber eventos realtime
+  - Hooks de realtime separados dos hooks de data fetching
+
+### TypeScript
+
+- Use **strict mode** habilitado
+- Defina tipos explícitos para props de componentes
+- Evite `any` - use `unknown` se necessário e faça type checking
+- Use **type inference** quando óbvio, mas seja explícito em interfaces públicas
+- Crie tipos reutilizáveis em `src/types/`
+- Props de componentes sempre como `interface` (não `type`)
+
+### Componentes
+
+**Estrutura Obrigatória:**
+
+```typescript
+"use client" // Se necessário
+
+import { useState } from "react"
+import { Component } from "@/components/ui/component"
+
+// 1. Props interface sempre exportada
+export interface ComponentNameProps {
+  prop1: string
+  prop2?: number
+  onAction?: () => void
+}
+
+// 2. Componente principal
+export function ComponentName({ prop1, prop2, onAction }: ComponentNameProps) {
+  // 3. Hooks no topo (ordem: useState, useRef, useEffect, custom hooks)
+  const [state, setState] = useState(initialValue)
+  
+  // 4. Handlers
+  const handleAction = () => {
+    // ...
+  }
+  
+  // 5. Early returns
+  if (someCondition) {
+    return <EmptyState />
+  }
+  
+  // 6. Render
+  return (
+    <div className="...">
+      {/* conteúdo */}
+    </div>
+  )
+}
+```
+
+**Regras:**
+
+- Máximo 200 linhas por componente (se exceder, quebrar em sub-componentes)
+- Máximo 10 props (se exceder, agrupar em objeto de config)
+- Máximo 5 estados locais (se exceder, extrair para custom hook)
+- Props interface sempre exportada no topo
+- Ordem de hooks: useState, useRef, useEffect, custom hooks
+
+### Hooks Pattern
+
+**Data Fetching Hook:**
+
+```typescript
+// src/features/messages/hooks/use-messages.ts
+"use client"
+
+import { useQuery } from "@tanstack/react-query"
+import { queryKeys } from "@/lib/react-query/keys"
+import { fetchMessages } from "../api/messages.service"
+
+export function useMessages(conversationId: string) {
+  return useQuery({
+    queryKey: queryKeys.messages.list(conversationId),
+    queryFn: () => fetchMessages(conversationId),
+    enabled: !!conversationId,
+    staleTime: 30_000, // 30 segundos
+  })
+}
+```
+
+**Mutation Hook com Optimistic Update:**
+
+```typescript
+// src/features/messages/hooks/use-send-message.ts
+"use client"
+
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { queryKeys } from "@/lib/react-query/keys"
+
+export function useSendMessage() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: sendMessage,
+    onMutate: async (newMessage) => {
+      // Cancelar queries em andamento
+      await queryClient.cancelQueries({ 
+        queryKey: queryKeys.messages.list(newMessage.conversationId) 
+      })
+      
+      // Snapshot do estado anterior
+      const previousMessages = queryClient.getQueryData(
+        queryKeys.messages.list(newMessage.conversationId)
+      )
+      
+      // Atualização otimista
+      queryClient.setQueryData(
+        queryKeys.messages.list(newMessage.conversationId),
+        (old = []) => [...old, { ...newMessage, id: `temp-${Date.now()}` }]
+      )
+      
+      return { previousMessages }
+    },
+    onError: (error, variables, context) => {
+      // Rollback em caso de erro
+      if (context?.previousMessages) {
+        queryClient.setQueryData(
+          queryKeys.messages.list(variables.conversationId),
+          context.previousMessages
+        )
+      }
+    },
+    onSuccess: (data, variables) => {
+      // Revalidar após sucesso
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.messages.list(variables.conversationId) 
+      })
+    },
+  })
+}
+```
+
+**Realtime Hook:**
+
+```typescript
+// src/features/messages/hooks/use-realtime-messages.ts
+"use client"
+
+import { useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { createBrowserClient } from "@/lib/supabase/client"
+import { queryKeys } from "@/lib/react-query/keys"
+
+export function useRealtimeMessages(conversationId: string) {
+  const queryClient = useQueryClient()
+  const supabase = createBrowserClient()
+
+  useEffect(() => {
+    if (!conversationId) return
+
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        queryClient.setQueryData(
+          queryKeys.messages.list(conversationId),
+          (old = []) => [...old, payload.new]
+        )
+      })
+      .subscribe()
+
+    // SEMPRE limpar subscription
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [conversationId, queryClient, supabase])
+}
+```
+
+### Server Actions
+
+**Setup com Middleware:**
+
+```typescript
+// src/lib/actions/_lib/safe-action.ts
+import { createSafeActionClient } from "next-safe-action"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+
+export const actionClient = createSafeActionClient({
+  handleReturnedServerError(e) {
+    return { serverError: e.message }
+  },
+})
+
+export const authActionClient = actionClient.use(async ({ next }) => {
+  const supabase = createServerSupabaseClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    throw new Error("Não autenticado")
+  }
+
+  return next({ ctx: { user, supabase } })
+})
+
+export const superAdminActionClient = authActionClient.use(async ({ next, ctx }) => {
+  const { data: profile } = await ctx.supabase
+    .from("users")
+    .select("role")
+    .eq("id", ctx.user.id)
+    .single()
+
+  if (profile?.role !== "super_admin") {
+    throw new Error("Acesso negado: apenas Super Admin")
+  }
+
+  return next({ ctx })
+})
+```
+
+**Action com Validação:**
+
+```typescript
+// src/lib/actions/messages/send-message.ts
+"use server"
+
+import { z } from "zod"
+import { authActionClient } from "../_lib/safe-action"
+import { revalidatePath } from "next/cache"
+
+const schema = z.object({
+  conversationId: z.string().uuid(),
+  content: z.string().min(1).max(5000),
+})
+
+export const sendMessage = authActionClient
+  .schema(schema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { data, error } = await ctx.supabase
+      .from("messages")
+      .insert({
+        conversation_id: parsedInput.conversationId,
+        sender_id: ctx.user.id,
+        sender_type: "atendente",
+        content: parsedInput.content,
+      })
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath("/cliente/live-chat")
+    
+    return { success: true, message: data }
+  })
+```
+
+### Error Handling
+
+```typescript
+// src/lib/utils/error-handler.ts
+import { PostgrestError } from "@supabase/supabase-js"
+
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public code?: string,
+    public statusCode: number = 500,
+    public userMessage?: string
+  ) {
+    super(message)
+    this.name = "AppError"
+  }
+}
+
+export function handleSupabaseError(error: PostgrestError): AppError {
+  if (error.code === "23505") {
+    return new AppError(error.message, "DUPLICATE", 409, "Este registro já existe")
+  }
+  if (error.code === "23503") {
+    return new AppError(error.message, "INVALID_REF", 400, "Referência inválida")
+  }
+  return new AppError(error.message, error.code, 500, "Erro ao processar sua solicitação")
+}
+
+export function formatErrorMessage(error: unknown): string {
+  if (error instanceof AppError) {
+    return error.userMessage || error.message
+  }
+  if (error instanceof Error) {
+    return error.message
+  }
+  return "Erro desconhecido. Tente novamente."
+}
+```
+
+### Supabase
+
+- Use `createBrowserClient()` para client-side
+- Use `createServerSupabaseClient()` para server-side (Server Components e Server Actions)
+- Sempre trate erros de forma explícita
+- Use RLS policies para segurança (nunca bypassar RLS)
+
+```typescript
+// Client-side
+import { createBrowserClient } from "@/lib/supabase/client"
+
+const supabase = createBrowserClient()
+const { data, error } = await supabase.from("users").select("*")
+
+// Server-side
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+
+const supabase = createServerSupabaseClient()
+const { data, error } = await supabase.from("users").select("*")
+```
+
+### Segurança
+
+- Nunca commite `.env.local` ou arquivos com secrets
+- Use variáveis de ambiente para dados sensíveis
+- Valide todas as entradas do usuário (sempre use Zod)
+- Sanitize dados antes de exibir
+- SEMPRE use RLS policies no Supabase
+- SEMPRE valide permissões em Server Actions
+
+### Performance
+
+- Use React Server Components quando possível
+- Implemente lazy loading para componentes pesados (`lazy` + `Suspense`)
+- Otimize imagens com `next/image`
+- Use `use client` apenas quando necessário (interatividade)
+- Configure `staleTime` adequadamente no React Query
+- Use virtualização para listas grandes (> 100 itens)
+- Code splitting com `dynamic` do Next.js
+
+```typescript
+// Lazy load
+import { lazy, Suspense } from "react"
+const Modal = lazy(() => import("./modal"))
+
+<Suspense fallback={<Spinner />}>
+  <Modal />
+</Suspense>
+
+// Dynamic import
+import dynamic from "next/dynamic"
+const Charts = dynamic(() => import("recharts"), {
+  ssr: false,
+  loading: () => <Skeleton />
+})
+
+// Virtualização
+import { useVirtualizer } from "@tanstack/react-virtual"
+```
+
+### Acessibilidade
+
+- Use semantic HTML
+- Adicione labels apropriados em formulários
+- Use atributos ARIA quando necessário
+- Teste navegação por teclado
+
+## Ferramentas de Qualidade
+
+### ESLint
+
+- Siga as regras configuradas em `.eslintrc.json`
+- Corrija warnings antes de commitar
+- Use `npm run lint` regularmente
+
+### Prettier
+
+- Código deve ser auto-formatado
+- Use configurações do projeto em `.prettierrc`
+- Integre com seu editor
+
+### TypeScript
+
+- Sem erros de type checking
+- Use `npm run type-check` antes de commitar
+- strict mode habilitado
+- Evite `any` (usar `unknown` e type guards)
+
+## Git Workflow
+
+### Commits
+
+Use conventional commits obrigatoriamente:
+
+```bash
+# Features
+feat(live-chat): adiciona busca de mensagens em tempo real
+feat(auth): implementa login com Google
+
+# Fixes
+fix(messages): corrige memory leak em realtime subscription
+fix(ui): ajusta responsividade do sidebar
+
+# Refactoring
+refactor(hooks): extrai lógica de useMessages para service layer
+
+# Docs
+docs(readme): atualiza instruções de setup
+
+# Chore
+chore(deps): atualiza dependências
+
+# Tests
+test(messages): adiciona testes para useRealtimeMessages
+```
+
+### Branches
+
+- `main` - produção
+- `develop` - desenvolvimento
+- `feature/nome-da-feature` - novas features
+- `fix/nome-do-bug` - correções
+
+## Checklist de Review
+
+Antes de finalizar qualquer feature, verifique:
+
+- [ ] Código segue os princípios SOLID e Clean Code
+- [ ] Nomes de variáveis/funções são descritivos
+- [ ] Arquivos e pastas em kebab-case
+- [ ] TypeScript sem erros (`npm run type-check`)
+- [ ] ESLint sem erros/warnings (`npm run lint`)
+- [ ] Componentes usando Shadcn/ui quando aplicável
+- [ ] Componentes não excedem 200 linhas
+- [ ] Formulários com React Hook Form + Zod
+- [ ] Server Actions usando next-safe-action com authActionClient
+- [ ] Estilização 100% com Tailwind CSS
+- [ ] Sem código duplicado (DRY)
+- [ ] Tratamento adequado de erros
+- [ ] Realtime subscriptions com cleanup adequado
+- [ ] React Query usado para server state
+- [ ] Context usado apenas para auth/theme
+- [ ] Sem console.logs esquecidos
+- [ ] Variáveis de ambiente documentadas em .env.example
+
+## Observações
+
+- Sempre priorize qualidade sobre velocidade
+- Documente código complexo com comentários
+- Mantenha componentes pequenos e focados (Single Responsibility)
+- Reutilize código sempre que possível
+- Pense em manutenibilidade futura
+- NUNCA misturar server state com Context
+- SEMPRE usar React Query para dados do banco
+- SEMPRE limpar subscriptions realtime
+- SEMPRE validar com Zod antes de persistir dados
+
