@@ -1,69 +1,44 @@
 /**
- * Query keys centralizados para React Query
- *
- * Estrutura hierárquica:
- * - all: ['entity']
- * - lists: ['entity', 'list']
- * - list: ['entity', 'list', filter]
- * - details: ['entity', 'detail']
- * - detail: ['entity', 'detail', id]
+ * Centralized query keys for React Query
+ * Facilita invalidação e gerenciamento de cache
  */
 
 export const queryKeys = {
+  // Auth
+  auth: {
+    user: ["auth", "user"] as const,
+    profile: (userId: string) => ["auth", "profile", userId] as const,
+  },
+
   // Messages
   messages: {
     all: ["messages"] as const,
-    lists: () => [...queryKeys.messages.all, "list"] as const,
-    list: (conversationId: string) => [...queryKeys.messages.lists(), conversationId] as const,
-    details: () => [...queryKeys.messages.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.messages.details(), id] as const,
+    list: (conversationId: string) => ["messages", "list", conversationId] as const,
+    detail: (messageId: string) => ["messages", "detail", messageId] as const,
+    unread: (conversationId: string) => ["messages", "unread", conversationId] as const,
   },
 
   // Conversations
   conversations: {
     all: ["conversations"] as const,
-    lists: () => [...queryKeys.conversations.all, "list"] as const,
-    list: (contactId: string, filters?: Record<string, unknown>) =>
-      [...queryKeys.conversations.lists(), contactId, filters] as const,
-    details: () => [...queryKeys.conversations.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.conversations.details(), id] as const,
+    list: (filters?: Record<string, unknown>) => ["conversations", "list", filters] as const,
+    detail: (conversationId: string) => ["conversations", "detail", conversationId] as const,
+    byContact: (contactId: string) => ["conversations", "byContact", contactId] as const,
   },
 
   // Contacts
   contacts: {
     all: ["contacts"] as const,
-    lists: () => [...queryKeys.contacts.all, "list"] as const,
-    list: (tenantId: string, filters?: Record<string, unknown>) =>
-      [...queryKeys.contacts.lists(), tenantId, filters] as const,
-    details: () => [...queryKeys.contacts.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.contacts.details(), id] as const,
+    list: (filters?: Record<string, unknown>) => ["contacts", "list", filters] as const,
+    detail: (contactId: string) => ["contacts", "detail", contactId] as const,
+    search: (query: string) => ["contacts", "search", query] as const,
   },
 
-  // Users
-  users: {
-    all: ["users"] as const,
-    lists: () => [...queryKeys.users.all, "list"] as const,
-    list: (tenantId?: string) => [...queryKeys.users.lists(), tenantId] as const,
-    details: () => [...queryKeys.users.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.users.details(), id] as const,
-    me: () => [...queryKeys.users.all, "me"] as const,
+  // Quick Replies
+  quickReplies: {
+    all: ["quickReplies"] as const,
+    list: (filters?: Record<string, unknown>) => ["quickReplies", "list", filters] as const,
+    detail: (replyId: string) => ["quickReplies", "detail", replyId] as const,
+    byCategory: (category: string) => ["quickReplies", "byCategory", category] as const,
   },
-
-  // Tenants
-  tenants: {
-    all: ["tenants"] as const,
-    lists: () => [...queryKeys.tenants.all, "list"] as const,
-    list: (filters?: Record<string, unknown>) => [...queryKeys.tenants.lists(), filters] as const,
-    details: () => [...queryKeys.tenants.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.tenants.details(), id] as const,
-  },
-
-  // Agents
-  agents: {
-    all: ["agents"] as const,
-    lists: () => [...queryKeys.agents.all, "list"] as const,
-    list: (filters?: Record<string, unknown>) => [...queryKeys.agents.lists(), filters] as const,
-    details: () => [...queryKeys.agents.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.agents.details(), id] as const,
-  },
-}
+} as const
